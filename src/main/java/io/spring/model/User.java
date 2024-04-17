@@ -5,20 +5,24 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
+
 import static jakarta.persistence.GenerationType.IDENTITY;
 
 @Entity
-@Table(name = "pages")
+@Table(name = "users")
 @Getter
 @Setter
-public class Page {
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+public class User {
     @Id
     @GeneratedValue(strategy = IDENTITY)
+    @EqualsAndHashCode.Include
     private Long id;
     @Column(unique = true)
-    private String slug;
-    private String name;
-    private String body;
+    private String email;
+    private String firstName;
+    private String lastName;
 }
