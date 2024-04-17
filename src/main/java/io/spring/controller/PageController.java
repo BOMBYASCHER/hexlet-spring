@@ -1,5 +1,6 @@
 package io.spring.controller;
 
+import io.spring.exception.ResourceNotFoundException;
 import io.spring.model.Page;
 import io.spring.repository.PageRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +18,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/pages")
@@ -41,24 +41,23 @@ public class PageController {
     }
 
     @GetMapping("/{slug}")
-    Optional<Page> show(@PathVariable String slug) {
+    Page show(@PathVariable String slug) {
         return pageRepository.findAll().stream()
                 .filter(page -> page.getSlug().equals(slug))
-                .findFirst();
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("Page with slug '" + slug + "' not found"));
     }
 
     @PutMapping("/{slug}")
     Page update(@PathVariable String slug, @RequestBody Page data) {
-        var optionalPage = pageRepository.findAll().stream()
+        var page = pageRepository.findAll().stream()
                 .filter(p -> p.getSlug().equals(slug))
-                .findFirst();
-        if (optionalPage.isPresent()) {
-            var page = optionalPage.get();
-            page.setName(data.getName());
-            page.setSlug(data.getSlug());
-            page.setBody(data.getBody());
-            pageRepository.save(page);
-        }
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("Page with slug '" + slug + "' not found"));
+        page.setName(data.getName());
+        page.setSlug(data.getSlug());
+        page.setBody(data.getBody());
+        pageRepository.save(page);
         return data;
     }
 
@@ -66,7 +65,8 @@ public class PageController {
     void delete(@PathVariable String slug) {
         var page = pageRepository.findAll().stream()
                 .filter(p -> p.getSlug().equals(slug))
-                .findFirst();
-        pageRepository.deleteById(page.get().getId());
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("Page with slug '" + slug + "' not found"));
+        pageRepository.deleteById(page.getId());
     }
 }

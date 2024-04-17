@@ -1,5 +1,6 @@
 package io.spring.controller;
 
+import io.spring.exception.ResourceNotFoundException;
 import io.spring.model.User;
 import io.spring.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,6 +9,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -28,7 +30,8 @@ public class UserController {
 
     @GetMapping("/{id}")
     User show(@PathVariable Long id) {
-        return userRepository.findById(id).get();
+        return userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User with id " + id + " not found"));
     }
 
     @PostMapping
@@ -41,5 +44,16 @@ public class UserController {
     @DeleteMapping("/{id}")
     void delete(@PathVariable Long id) {
         userRepository.deleteById(id);
+    }
+
+    @PutMapping("/{id}")
+    User update(@PathVariable Long id, @RequestBody User data) {
+        var user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User with id " + id + " not found"));
+        user.setEmail(data.getEmail());
+        user.setFirstName(data.getFirstName());
+        user.setLastName(data.getLastName());
+        userRepository.save(user);
+        return user;
     }
 }
