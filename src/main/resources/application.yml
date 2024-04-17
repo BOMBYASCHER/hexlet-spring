@@ -1,0 +1,18 @@
+---
+logging:
+  level:
+    root: WARN
+
+spring:
+  jpa:
+    generate-ddl: true
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+  output:
+    ansi:
+      enabled: always
+
+server:
+  port: 7070
+  address: 0.0.0.0
