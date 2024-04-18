@@ -1,0 +1,4 @@
+### This is a learning repository for a college course.
+#### Course Description:
+
+In this course, you'll explore Spring Boot, a popular add-on to the Spring framework that makes building applications on Spring much easier. You'll learn about ORM and migrations, and you'll become familiar with authentication and authorization - actions that protect our data from unauthorized access. You'll understand application architecture and learn about message queues. Finally, you'll learn how to build a new application using Spring Boot, creating entities, storing them in a database, and organizing the application's business logic. You will be able to create your own annotations and test your application. With the knowledge gained in this course, you will be able to develop full-blown, production-class projects on Spring.
