@@ -1,9 +1,11 @@
 package io.spring.controller;
 
+import io.spring.exception.ResourceAlreadyExistsException;
 import io.spring.exception.ResourceNotFoundException;
 import io.spring.model.Page;
 import io.spring.repository.PageRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -27,46 +29,48 @@ public class PageController {
 
     @GetMapping
     ResponseEntity<List<Page>> index(@RequestParam(defaultValue = "10") Integer limit) {
-        var result = pageRepository.findAll().stream().limit(limit).toList();
+        var result = pageRepository.findAll(PageRequest.of(0, limit));
         return ResponseEntity.ok()
-                .header("X-Total-Count", String.valueOf(result.size()))
-                .body(result);
+                .header("X-Total-Count", String.valueOf(result.getSize()))
+                .body(result.toList());
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     Page create(@RequestBody Page page) {
-        pageRepository.save(page);
+        try {
+            pageRepository.save(page);
+        } catch (Exception e) {
+            throw new ResourceAlreadyExistsException("Page with slug '" + page.getSlug() + "' already exists");
+        }
         return page;
     }
 
     @GetMapping("/{slug}")
     Page show(@PathVariable String slug) {
-        return pageRepository.findAll().stream()
-                .filter(page -> page.getSlug().equals(slug))
-                .findFirst()
+        return pageRepository.findBySlug(slug)
                 .orElseThrow(() -> new ResourceNotFoundException("Page with slug '" + slug + "' not found"));
     }
 
     @PutMapping("/{slug}")
     Page update(@PathVariable String slug, @RequestBody Page data) {
-        var page = pageRepository.findAll().stream()
-                .filter(p -> p.getSlug().equals(slug))
-                .findFirst()
+        var page = pageRepository.findBySlug(slug)
                 .orElseThrow(() -> new ResourceNotFoundException("Page with slug '" + slug + "' not found"));
-        page.setName(data.getName());
-        page.setSlug(data.getSlug());
-        page.setBody(data.getBody());
-        pageRepository.save(page);
+        try {
+            page.setName(data.getName());
+            page.setSlug(data.getSlug());
+            page.setBody(data.getBody());
+            pageRepository.save(page);
+        } catch (Exception e) {
+            throw new ResourceAlreadyExistsException("Page with slug '" + page.getSlug() + "' already exists");
+        }
         return data;
     }
 
     @DeleteMapping("/{slug}")
     void delete(@PathVariable String slug) {
-        var page = pageRepository.findAll().stream()
-                .filter(p -> p.getSlug().equals(slug))
-                .findFirst()
+        var page = pageRepository.findBySlug(slug)
                 .orElseThrow(() -> new ResourceNotFoundException("Page with slug '" + slug + "' not found"));
-        pageRepository.deleteById(page.getId());
+        pageRepository.delete(page);
     }
 }

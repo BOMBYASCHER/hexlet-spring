@@ -1,5 +1,6 @@
 package io.spring.controller;
 
+import io.spring.exception.ResourceAlreadyExistsException;
 import io.spring.exception.ResourceNotFoundException;
 import io.spring.model.User;
 import io.spring.repository.UserRepository;
@@ -37,7 +38,11 @@ public class UserController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     User create(@RequestBody User user) {
-        userRepository.save(user);
+        try {
+            userRepository.save(user);
+        } catch (Exception e) {
+            throw new ResourceAlreadyExistsException("User with email '" + user.getEmail() + "' already exists");
+        }
         return user;
     }
 
@@ -50,10 +55,14 @@ public class UserController {
     User update(@PathVariable Long id, @RequestBody User data) {
         var user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User with id " + id + " not found"));
-        user.setEmail(data.getEmail());
-        user.setFirstName(data.getFirstName());
-        user.setLastName(data.getLastName());
-        userRepository.save(user);
+        try {
+            user.setEmail(data.getEmail());
+            user.setFirstName(data.getFirstName());
+            user.setLastName(data.getLastName());
+            userRepository.save(user);
+        } catch (Exception e) {
+            throw new ResourceAlreadyExistsException("User with email '" + user.getEmail() + "' already exists");
+        }
         return user;
     }
 }
