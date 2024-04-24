@@ -1,3 +1,5 @@
+[![Maintainability](https://api.codeclimate.com/v1/badges/a5bcafb86ea7ae8113da/maintainability)](https://codeclimate.com/github/BOMBYASCHER/hexlet-spring/maintainability)
+[![Test Coverage](https://api.codeclimate.com/v1/badges/a5bcafb86ea7ae8113da/test_coverage)](https://codeclimate.com/github/BOMBYASCHER/hexlet-spring/test_coverage)
 ### This is a learning repository for a college course.
 #### Course Description:
 
