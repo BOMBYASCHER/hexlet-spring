@@ -29,9 +29,12 @@ public class User {
     @EqualsAndHashCode.Include
     private Long id;
     @Column(unique = true)
+    private String username;
+    @Column(unique = true)
     private String email;
     private String firstName;
     private String lastName;
+    private String password;
     @LastModifiedDate
     private LocalDate updatedAt;
 

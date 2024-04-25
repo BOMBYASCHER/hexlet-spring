@@ -1,8 +1,11 @@
 package io.spring.controller;
 
+import io.spring.dto.user.UserCreateDTO;
+import io.spring.dto.user.UserDTO;
+import io.spring.dto.user.UserUpdateDTO;
 import io.spring.exception.ResourceAlreadyExistsException;
 import io.spring.exception.ResourceNotFoundException;
-import io.spring.model.User;
+import io.spring.mapper.UserMapper;
 import io.spring.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -24,26 +27,33 @@ public class UserController {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private UserMapper userMapper;
     @GetMapping
-    List<User> index() {
-        return userRepository.findAll();
+    List<UserDTO> index() {
+        return userRepository.findAll()
+                .stream()
+                .map(user -> userMapper.map(user))
+                .toList();
     }
 
     @GetMapping("/{id}")
-    User show(@PathVariable Long id) {
-        return userRepository.findById(id)
+    UserDTO show(@PathVariable Long id) {
+        var user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User with id " + id + " not found"));
+        return userMapper.map(user);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    User create(@RequestBody User user) {
+    UserDTO create(@RequestBody UserCreateDTO userDTO) {
+        var user = userMapper.map(userDTO);
         try {
             userRepository.save(user);
         } catch (Exception e) {
             throw new ResourceAlreadyExistsException("User with email '" + user.getEmail() + "' already exists");
         }
-        return user;
+        return userMapper.map(user);
     }
 
     @DeleteMapping("/{id}")
@@ -52,17 +62,15 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
-    User update(@PathVariable Long id, @RequestBody User data) {
+    UserDTO update(@PathVariable Long id, @RequestBody UserUpdateDTO data) {
         var user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User with id " + id + " not found"));
         try {
-            user.setEmail(data.getEmail());
-            user.setFirstName(data.getFirstName());
-            user.setLastName(data.getLastName());
+            userMapper.update(data, user);
             userRepository.save(user);
         } catch (Exception e) {
             throw new ResourceAlreadyExistsException("User with email '" + user.getEmail() + "' already exists");
         }
-        return user;
+        return userMapper.map(user);
     }
 }

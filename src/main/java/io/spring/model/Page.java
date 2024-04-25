@@ -28,6 +28,7 @@ public class Page {
     @Column(unique = true)
     private String slug;
     private String name;
+    @Column(columnDefinition = "TEXT")
     private String body;
     @LastModifiedDate
     private LocalDate updatedAt;
