@@ -6,6 +6,9 @@ import jakarta.persistence.EntityListeners;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -28,13 +31,24 @@ public class User {
     @GeneratedValue(strategy = IDENTITY)
     @EqualsAndHashCode.Include
     private Long id;
+
     @Column(unique = true)
+    @NotBlank
     private String username;
+
     @Column(unique = true)
+    @Email
     private String email;
+
+    @Size(min = 2)
     private String firstName;
+
+    @Size(min = 2)
     private String lastName;
+
+    @Size(min = 8)
     private String password;
+
     @LastModifiedDate
     private LocalDate updatedAt;
 

@@ -53,7 +53,7 @@ public class PagesControllerTest {
                 .ignore(Select.field(Page::getUpdatedAt))
                 .supply(Select.field(Page::getSlug), () -> faker.internet().slug())
                 .supply(Select.field(Page::getName), () -> faker.internet().domainName())
-                .supply(Select.field(Page::getBody), () -> faker.text().text())
+                .supply(Select.field(Page::getBody), () -> faker.text().text(10, 1000))
                 .create();
     }
 

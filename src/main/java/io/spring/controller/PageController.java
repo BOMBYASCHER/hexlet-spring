@@ -7,6 +7,7 @@ import io.spring.exception.ResourceAlreadyExistsException;
 import io.spring.exception.ResourceNotFoundException;
 import io.spring.mapper.PageMapper;
 import io.spring.repository.PageRepository;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
@@ -46,7 +47,7 @@ public class PageController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    PageDTO create(@RequestBody PageCreateDTO pageData) {
+    PageDTO create(@Valid @RequestBody PageCreateDTO pageData) {
         var page = pageMapper.map(pageData);
         try {
             pageRepository.save(page);
@@ -64,7 +65,7 @@ public class PageController {
     }
 
     @PutMapping("/{slug}")
-    PageDTO update(@PathVariable String slug, @RequestBody PageUpdateDTO data) {
+    PageDTO update(@PathVariable String slug, @Valid @RequestBody PageUpdateDTO data) {
         var page = pageRepository.findBySlug(slug)
                 .orElseThrow(() -> new ResourceNotFoundException("Page with slug '" + slug + "' not found"));
         try {
