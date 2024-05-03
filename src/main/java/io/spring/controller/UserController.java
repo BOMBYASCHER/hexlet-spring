@@ -34,7 +34,7 @@ public class UserController {
     List<UserDTO> index() {
         return userRepository.findAll()
                 .stream()
-                .map(user -> userMapper.map(user))
+                .map(userMapper::map)
                 .toList();
     }
 
@@ -57,11 +57,6 @@ public class UserController {
         return userMapper.map(user);
     }
 
-    @DeleteMapping("/{id}")
-    void delete(@PathVariable Long id) {
-        userRepository.deleteById(id);
-    }
-
     @PutMapping("/{id}")
     UserDTO update(@PathVariable Long id, @Valid @RequestBody UserUpdateDTO data) {
         var user = userRepository.findById(id)
@@ -73,5 +68,11 @@ public class UserController {
             throw new ResourceAlreadyExistsException("User with email '" + user.getEmail() + "' already exists");
         }
         return userMapper.map(user);
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    void delete(@PathVariable Long id) {
+        userRepository.deleteById(id);
     }
 }

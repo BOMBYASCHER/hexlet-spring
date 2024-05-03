@@ -38,7 +38,7 @@ public class PageController {
     ResponseEntity<List<PageDTO>> index(@RequestParam(defaultValue = "10") Integer limit) {
         var result = pageRepository.findAll(PageRequest.of(0, limit))
                 .stream()
-                .map(page -> pageMapper.map(page))
+                .map(pageMapper::map)
                 .toList();
         return ResponseEntity.ok()
                 .header("X-Total-Count", String.valueOf(result.size()))
@@ -78,6 +78,7 @@ public class PageController {
     }
 
     @DeleteMapping("/{slug}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     void delete(@PathVariable String slug) {
         var page = pageRepository.findBySlug(slug)
                 .orElseThrow(() -> new ResourceNotFoundException("Page with slug '" + slug + "' not found"));

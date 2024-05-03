@@ -12,10 +12,11 @@ import java.util.HashMap;
 
 import io.spring.dto.user.UserUpdateDTO;
 import io.spring.mapper.UserMapper;
+import io.spring.util.ModelGenerator;
 import org.instancio.Instancio;
-import org.instancio.Select;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.openapitools.jackson.nullable.JsonNullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -26,15 +27,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.spring.model.User;
 import io.spring.repository.UserRepository;
-import net.datafaker.Faker;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 public class UsersControllerTest {
     @Autowired
     private MockMvc mockMvc;
-
-    private final Faker faker = new Faker();
 
     @Autowired
     private UserRepository userRepository;
@@ -45,20 +43,14 @@ public class UsersControllerTest {
     @Autowired
     private UserMapper userMapper;
 
+    @Autowired
+    private ModelGenerator modelGenerator;
+
     private User testUser;
 
     @BeforeEach
     public void setUp() {
-        testUser = Instancio.of(User.class)
-                .ignore(Select.field(User::getId))
-                .ignore(Select.field(User::getCreatedAt))
-                .ignore(Select.field(User::getUpdatedAt))
-                .supply(Select.field(User::getFirstName), () -> faker.name().firstName())
-                .supply(Select.field(User::getLastName), () -> faker.name().lastName())
-                .supply(Select.field(User::getEmail), () -> faker.internet().emailAddress())
-                .supply(Select.field(User::getUsername), () -> faker.name().username())
-                .supply(Select.field(User::getPassword), () -> faker.internet().password())
-                .create();
+        testUser = Instancio.of(modelGenerator.getUser()).create();
     }
 
     @Test
@@ -79,9 +71,7 @@ public class UsersControllerTest {
                 user -> user.node("id").isEqualTo(testUser.getId()),
                 user -> user.node("username").isEqualTo(testUser.getUsername()),
                 user -> user.node("firstName").isEqualTo(testUser.getFirstName()),
-                user -> user.node("lastName").isEqualTo(testUser.getLastName()),
-                user -> user.node("email").isEqualTo(testUser.getEmail()),
-                user -> user.node("password").isEqualTo(testUser.getPassword())
+                user -> user.node("lastName").isEqualTo(testUser.getLastName())
         );
     }
 
@@ -103,7 +93,7 @@ public class UsersControllerTest {
     public void testDelete() throws Exception {
         userRepository.save(testUser);
         mockMvc.perform(delete("/users/" + testUser.getId()))
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
         assertThat(userRepository.findById(testUser.getId())).isNotPresent();
     }
 
@@ -112,9 +102,9 @@ public class UsersControllerTest {
         userRepository.save(testUser);
 
         var data = new UserUpdateDTO();
-        data.setUsername("username");
-        data.setEmail("email@email.com");
-        data.setPassword("password");
+        data.setUsername(JsonNullable.of("username"));
+        data.setEmail(JsonNullable.of("email@email.com"));
+        data.setPassword(JsonNullable.of("password"));
 
         var request = put("/users/" + testUser.getId())
                 .contentType(MediaType.APPLICATION_JSON)
@@ -124,9 +114,9 @@ public class UsersControllerTest {
                 .andExpect(status().isOk());
 
         var user = userRepository.findById(testUser.getId()).get();
-        assertThat(user.getUsername()).isEqualTo((data.getUsername()));
-        assertThat(user.getEmail()).isEqualTo((data.getEmail()));
-        assertThat(user.getPassword()).isEqualTo((data.getPassword()));
+        assertThat(user.getUsername()).isEqualTo(data.getUsername().get());
+        assertThat(user.getEmail()).isEqualTo(data.getEmail().get());
+        assertThat(user.getPassword()).isEqualTo(data.getPassword().get());
     }
 
     @Test

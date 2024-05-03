@@ -5,11 +5,12 @@ import io.spring.dto.page.PageUpdateDTO;
 import io.spring.mapper.PageMapper;
 import io.spring.model.Page;
 import io.spring.repository.PageRepository;
+import io.spring.util.ModelGenerator;
 import net.datafaker.Faker;
 import org.instancio.Instancio;
-import org.instancio.Select;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.openapitools.jackson.nullable.JsonNullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -43,18 +44,14 @@ public class PagesControllerTest {
     @Autowired
     private PageMapper pageMapper;
 
+    @Autowired
+    private ModelGenerator modelGenerator;
+
     private Page testPage;
 
     @BeforeEach
     public void setUp() {
-        testPage = Instancio.of(Page.class)
-                .ignore(Select.field(Page::getId))
-                .ignore(Select.field(Page::getCreatedAt))
-                .ignore(Select.field(Page::getUpdatedAt))
-                .supply(Select.field(Page::getSlug), () -> faker.internet().slug())
-                .supply(Select.field(Page::getName), () -> faker.internet().domainName())
-                .supply(Select.field(Page::getBody), () -> faker.text().text(10, 1000))
-                .create();
+        testPage = Instancio.of(modelGenerator.getPage()).create();
     }
 
     @Test
@@ -97,17 +94,16 @@ public class PagesControllerTest {
     public void testDelete() throws Exception {
         pageRepository.save(testPage);
         mockMvc.perform(delete("/pages/" + testPage.getSlug()))
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
         assertThat(pageRepository.findById(testPage.getId())).isNotPresent();
     }
 
     @Test
     public void testUpdate() throws Exception {
         pageRepository.save(testPage);
-
         var data = new PageUpdateDTO();
-        data.setName("testdomainname");
-        data.setBody(faker.text().text());
+        data.setName(JsonNullable.of("testdomainname"));
+        data.setBody(JsonNullable.of(faker.text().text(10, 1000)));
 
         var request = put("/pages/" + testPage.getSlug())
                 .contentType(MediaType.APPLICATION_JSON)
@@ -117,8 +113,10 @@ public class PagesControllerTest {
                 .andExpect(status().isOk());
 
         var page = pageRepository.findById(testPage.getId()).get();
-        assertThat(page.getName()).isEqualTo((data.getName()));
-        assertThat(page.getBody()).isEqualTo((data.getBody()));
+        assertThatJson(page).and(
+                p -> p.node("name").isEqualTo(data.getName()),
+                p -> p.node("body").isEqualTo(data.getBody())
+        );
     }
 
     @Test
