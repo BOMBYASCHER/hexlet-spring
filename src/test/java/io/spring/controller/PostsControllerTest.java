@@ -30,6 +30,8 @@ import io.spring.dto.post.PostUpdateDTO;
 import io.spring.mapper.PostMapper;
 import io.spring.repository.PostRepository;
 
+import java.time.LocalDate;
+
 @SpringBootTest
 @AutoConfigureMockMvc
 public class PostsControllerTest {
@@ -72,6 +74,101 @@ public class PostsControllerTest {
                 .andReturn();
         var body = result.getResponse().getContentAsString();
         assertThatJson(body).isArray();
+    }
+
+    @Test
+    public void testIndexWithNameContains() throws Exception {
+        testPost.setName("Lamp");
+        postRepository.save(testPost);
+        var result = mockMvc.perform(get("/posts?nameCont=lamp"))
+                .andExpect(status().isOk())
+                .andReturn();
+        var body = result.getResponse().getContentAsString();
+        var postDTO = postMapper.map(testPost);
+        assertThatJson(body).isArray()
+                .contains(postDTO)
+                .allSatisfy(element -> assertThatJson(element)
+                        .and(v -> v.node("name").asString().containsIgnoringCase("lamp"))
+        );
+    }
+
+    @Test
+    public void testIndexWithAuthorId() throws Exception {
+        postRepository.save(testPost);
+        System.out.println(testPost.getId());
+        var result = mockMvc.perform(get("/posts?authorId=" + testPost.getAuthor().getId()))
+                .andExpect(status().isOk())
+                .andReturn();
+        var body = result.getResponse().getContentAsString();
+        var postDTO = postMapper.map(testPost);
+        assertThatJson(body).isArray()
+                .contains(postDTO)
+                .allSatisfy(element -> assertThatJson(element)
+                        .and(v -> v.node("authorId").isEqualTo(testPost.getId()))
+        );
+    }
+
+    @Test
+    public void testIndexWithCreatedAtGreaterThan() throws Exception {
+        postRepository.save(testPost);
+        testPost.setCreatedAt(LocalDate.parse("2024-02-02"));
+        postRepository.save(testPost);
+        var result = mockMvc.perform(get("/posts?createdAtGt=2024-01-01"))
+                .andExpect(status().isOk())
+                .andReturn();
+        var body = result.getResponse().getContentAsString();
+        var postDTO = postMapper.map(testPost);
+        assertThatJson(body).isArray()
+                .contains(postDTO)
+                .allSatisfy(element -> {
+                    var createdAt = om.readValue(element.toString(), Post.class).getCreatedAt();
+                    assertThat(createdAt).isAfterOrEqualTo("2024-01-01");
+                });
+    }
+
+    @Test
+    public void testIndexWithCreatedAtLessThan() throws Exception {
+        postRepository.save(testPost);
+        testPost.setCreatedAt(LocalDate.parse("2023-01-01"));
+        postRepository.save(testPost);
+        var result = mockMvc.perform(get("/posts?createdAtLt=2024-01-01"))
+                .andExpect(status().isOk())
+                .andReturn();
+        var body = result.getResponse().getContentAsString();
+        var postDTO = postMapper.map(testPost);
+        assertThatJson(body).isArray()
+                .contains(postDTO)
+                .allSatisfy(element -> {
+                    var createdAt = om.readValue(element.toString(), Post.class).getCreatedAt();
+                    assertThat(createdAt).isBeforeOrEqualTo("2024-01-01");
+                });
+    }
+
+    @Test
+    public void testIndexComplexCondition() throws Exception {
+        postRepository.save(testPost);
+        testPost.setName("Default");
+        testPost.setCreatedAt(LocalDate.parse("2024-01-02"));
+        postRepository.save(testPost);
+        var authorId = testPost.getAuthor().getId().intValue();
+        var request = get("/posts"
+                + "?nameCont=default"
+                + "&authorId=" + authorId
+                + "&createdAtGt=2024-01-01"
+                + "&createdAtLt=2024-01-03"
+        );
+        var result = mockMvc.perform(request)
+                .andExpect(status().isOk())
+                .andReturn();
+        var body = result.getResponse().getContentAsString();
+        var postDTO = postMapper.map(testPost);
+        System.out.println(body);
+        assertThatJson(body).isArray()
+                .contains(postDTO)
+                .allSatisfy(element -> assertThatJson(element)
+                        .and(v -> v.node("name").asString().containsIgnoringCase("deFault"))
+                        .and(v -> v.node("authorId").isEqualTo(authorId))
+        );
     }
 
     @Test

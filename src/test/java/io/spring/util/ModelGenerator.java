@@ -38,14 +38,15 @@ public class ModelGenerator {
                 .ignore(Select.field(Page::getCreatedAt))
                 .ignore(Select.field(Page::getUpdatedAt))
                 .supply(Select.field(Page::getSlug), () -> faker.internet().slug())
-                .supply(Select.field(Page::getName), () -> faker.internet().domainName())
+                .supply(Select.field(Page::getName), () -> faker.name().title())
                 .supply(Select.field(Page::getBody), () -> faker.text().text(10, 1000))
                 .toModel();
         post = Instancio.of(Post.class)
                 .ignore(Select.field(Post::getId))
                 .ignore(Select.field(Post::getAuthor))
-                .supply(Select.field(Post::getName), () -> faker.gameOfThrones().house())
-                .supply(Select.field(Post::getBody), () -> faker.gameOfThrones().quote())
+                .supply(Select.field(Post::getSlug), () -> faker.internet().slug())
+                .supply(Select.field(Post::getName), () -> faker.lorem().word())
+                .supply(Select.field(Post::getBody), () -> faker.lorem().paragraph())
                 .toModel();
     }
 }

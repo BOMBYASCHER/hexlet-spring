@@ -2,11 +2,13 @@ package io.spring.controller;
 
 import io.spring.dto.page.PageCreateDTO;
 import io.spring.dto.page.PageDTO;
+import io.spring.dto.page.PageParamsDTO;
 import io.spring.dto.page.PageUpdateDTO;
 import io.spring.exception.ResourceAlreadyExistsException;
 import io.spring.exception.ResourceNotFoundException;
 import io.spring.mapper.PageMapper;
 import io.spring.repository.PageRepository;
+import io.spring.specification.PageSpecification;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -34,9 +36,13 @@ public class PageController {
     @Autowired
     private PageMapper pageMapper;
 
+    @Autowired
+    private PageSpecification specBuilder;
+
     @GetMapping
-    ResponseEntity<List<PageDTO>> index(@RequestParam(defaultValue = "10") Integer limit) {
-        var result = pageRepository.findAll(PageRequest.of(0, limit))
+    ResponseEntity<List<PageDTO>> index(PageParamsDTO params, @RequestParam(defaultValue = "10") Integer limit) {
+        var specs = specBuilder.build(params);
+        var result = pageRepository.findAll(specs, PageRequest.of(0, limit))
                 .stream()
                 .map(pageMapper::map)
                 .toList();

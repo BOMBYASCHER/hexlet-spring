@@ -1,6 +1,7 @@
 package io.spring.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.spring.dto.page.PageDTO;
 import io.spring.dto.page.PageUpdateDTO;
 import io.spring.mapper.PageMapper;
 import io.spring.model.Page;
@@ -17,6 +18,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.LocalDate;
 import java.util.HashMap;
 
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
@@ -56,8 +58,61 @@ public class PagesControllerTest {
 
     @Test
     public void testIndex() throws Exception {
-        mockMvc.perform(get("/pages"))
-                .andExpect(status().isOk());
+        var response = mockMvc.perform(get("/pages"))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        assertThatJson(response).isArray();
+    }
+
+    @Test
+    public void testIndexWithNameContains() throws Exception {
+        testPage.setName("Begin");
+        pageRepository.save(testPage);
+        var response = mockMvc.perform(get("/pages?nameCont=begin"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse()
+                .getContentAsString();
+        var pageDTO = pageMapper.map(testPage);
+        assertThatJson(response).isArray()
+                .contains(pageDTO)
+                .allSatisfy(element -> assertThatJson(element)
+                        .and(v -> v.node("name").asString().containsIgnoringCase("begin"))
+        );
+    }
+
+    @Test
+    public void testIndexWithCreatedAtGreaterThan() throws Exception {
+        pageRepository.save(testPage);
+        testPage.setCreatedAt(LocalDate.parse("2024-02-02"));
+        pageRepository.save(testPage);
+        System.out.println(testPage.getCreatedAt());
+        var result = mockMvc.perform(get("/pages?createdAtGt=2024-01-01"))
+                .andExpect(status().isOk())
+                .andReturn();
+        var body = result.getResponse().getContentAsString();
+        assertThatJson(body).isArray()
+                .allSatisfy((element) -> {
+                    var createdAt = om.readValue(element.toString(), PageDTO.class).getCreatedAt();
+                    assertThat(createdAt).isAfterOrEqualTo("2024-01-01");
+                });
+    }
+
+    @Test
+    public void testIndexWithCreatedAtLessThan() throws Exception {
+        pageRepository.save(testPage);
+        testPage.setCreatedAt(LocalDate.parse("2023-01-01"));
+        pageRepository.save(testPage);
+        var result = mockMvc.perform(get("/pages?createdAtLt=2024-01-01"))
+                .andExpect(status().isOk())
+                .andReturn();
+        var body = result.getResponse().getContentAsString();
+        assertThatJson(body).isArray()
+                .allSatisfy((element) -> {
+                    var createdAt = om.readValue(element.toString(), PageDTO.class).getCreatedAt();
+                    assertThat(createdAt).isBeforeOrEqualTo("2024-01-01");
+                });
     }
 
     @Test

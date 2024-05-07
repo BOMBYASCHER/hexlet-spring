@@ -2,12 +2,15 @@ package io.spring.controller;
 
 import io.spring.dto.post.PostCreateDTO;
 import io.spring.dto.post.PostDTO;
+import io.spring.dto.post.PostParamsDTO;
 import io.spring.dto.post.PostUpdateDTO;
 import io.spring.exception.ResourceNotFoundException;
 import io.spring.mapper.PostMapper;
 import io.spring.repository.PostRepository;
+import io.spring.specification.PostSpecification;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,6 +19,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -30,12 +34,14 @@ public class PostController {
     @Autowired
     private PostMapper postMapper;
 
+    @Autowired
+    private PostSpecification specBuilder;
+
     @GetMapping
-    List<PostDTO> index() {
-        return postRepository.findAll()
-                .stream()
-                .map(postMapper::map)
-                .toList();
+    public List<PostDTO> index(PostParamsDTO params, @RequestParam(defaultValue = "1") int page) {
+        var spec = specBuilder.build(params);
+        var posts = postRepository.findAll(spec, PageRequest.of(page - 1, 10));
+        return posts.map(postMapper::map).toList();
     }
 
     @GetMapping("/{id}")
