@@ -11,11 +11,8 @@ spring:
   output:
     ansi:
       enabled: always
-
+  profiles:
+    default: development
 rsa:
   private-key: classpath:certs/private.pem
   public-key: classpath:certs/public.pem
-
-server:
-  port: 7070
-  address: 0.0.0.0
