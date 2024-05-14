@@ -4,14 +4,9 @@ import io.spring.dto.page.PageCreateDTO;
 import io.spring.dto.page.PageDTO;
 import io.spring.dto.page.PageParamsDTO;
 import io.spring.dto.page.PageUpdateDTO;
-import io.spring.exception.ResourceAlreadyExistsException;
-import io.spring.exception.ResourceNotFoundException;
-import io.spring.mapper.PageMapper;
-import io.spring.repository.PageRepository;
-import io.spring.specification.PageSpecification;
+import io.spring.service.PageService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -30,64 +25,37 @@ import java.util.List;
 @RestController
 @RequestMapping("/pages")
 public class PageController {
-    @Autowired
-    private PageRepository pageRepository;
 
     @Autowired
-    private PageMapper pageMapper;
-
-    @Autowired
-    private PageSpecification specBuilder;
+    private PageService pageService;
 
     @GetMapping
     ResponseEntity<List<PageDTO>> index(PageParamsDTO params, @RequestParam(defaultValue = "10") Integer limit) {
-        var specs = specBuilder.build(params);
-        var result = pageRepository.findAll(specs, PageRequest.of(0, limit))
-                .stream()
-                .map(pageMapper::map)
-                .toList();
+        var pages = pageService.getAll(params, limit);
         return ResponseEntity.ok()
-                .header("X-Total-Count", String.valueOf(result.size()))
-                .body(result);
+                .header("X-Total-Count", String.valueOf(pages.size()))
+                .body(pages);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     PageDTO create(@Valid @RequestBody PageCreateDTO pageData) {
-        var page = pageMapper.map(pageData);
-        try {
-            pageRepository.save(page);
-        } catch (Exception e) {
-            throw new ResourceAlreadyExistsException("Page with slug '" + page.getSlug() + "' already exists");
-        }
-        return pageMapper.map(page);
+        return pageService.create(pageData);
     }
 
     @GetMapping("/{slug}")
     PageDTO show(@PathVariable String slug) {
-        var page = pageRepository.findBySlug(slug)
-                .orElseThrow(() -> new ResourceNotFoundException("Page with slug '" + slug + "' not found"));
-        return pageMapper.map(page);
+        return pageService.get(slug);
     }
 
     @PutMapping("/{slug}")
     PageDTO update(@PathVariable String slug, @Valid @RequestBody PageUpdateDTO data) {
-        var page = pageRepository.findBySlug(slug)
-                .orElseThrow(() -> new ResourceNotFoundException("Page with slug '" + slug + "' not found"));
-        try {
-            pageMapper.update(data, page);
-            pageRepository.save(page);
-        } catch (Exception e) {
-            throw new ResourceAlreadyExistsException("Page with slug '" + page.getSlug() + "' already exists");
-        }
-        return pageMapper.map(page);
+        return pageService.update(slug, data);
     }
 
     @DeleteMapping("/{slug}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     void delete(@PathVariable String slug) {
-        var page = pageRepository.findBySlug(slug)
-                .orElseThrow(() -> new ResourceNotFoundException("Page with slug '" + slug + "' not found"));
-        pageRepository.delete(page);
+        pageService.delete(slug);
     }
 }

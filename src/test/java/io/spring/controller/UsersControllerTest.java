@@ -7,9 +7,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 
 import java.util.HashMap;
 
+import io.spring.dto.user.UserCreateDTO;
 import io.spring.dto.user.UserUpdateDTO;
 import io.spring.mapper.UserMapper;
 import io.spring.util.ModelGenerator;
@@ -47,22 +49,24 @@ public class UsersControllerTest {
     private ModelGenerator modelGenerator;
 
     private User testUser;
+    private UserCreateDTO createUser;
 
     @BeforeEach
     public void setUp() {
         testUser = Instancio.of(modelGenerator.getUser()).create();
+        createUser = Instancio.of(modelGenerator.getCreateUser()).create();
     }
 
     @Test
     public void testIndex() throws Exception {
-        mockMvc.perform(get("/users"))
+        mockMvc.perform(get("/users").with(jwt()))
                 .andExpect(status().isOk());
     }
 
     @Test
     public void testShow() throws Exception {
         userRepository.save(testUser);
-        var response = mockMvc.perform(get("/users/" + testUser.getId()))
+        var response = mockMvc.perform(get("/users/" + testUser.getId()).with(jwt()))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
@@ -77,10 +81,10 @@ public class UsersControllerTest {
 
     @Test
     public void testCreate() throws Exception {
-        var userCreateDTO = userMapper.map(testUser);
+//        var userCreateDTO = userMapper.map(testUser);
         var request = post("/users")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(om.writeValueAsString(userCreateDTO));
+                .content(om.writeValueAsString(createUser));
         var response = mockMvc.perform(request)
                 .andExpect(status().isCreated())
                 .andReturn()
@@ -92,7 +96,7 @@ public class UsersControllerTest {
     @Test
     public void testDelete() throws Exception {
         userRepository.save(testUser);
-        mockMvc.perform(delete("/users/" + testUser.getId()))
+        mockMvc.perform(delete("/users/" + testUser.getId()).with(jwt()))
                 .andExpect(status().isNoContent());
         assertThat(userRepository.findById(testUser.getId())).isNotPresent();
     }
@@ -106,7 +110,7 @@ public class UsersControllerTest {
         data.setEmail(JsonNullable.of("email@email.com"));
         data.setPassword(JsonNullable.of("password"));
 
-        var request = put("/users/" + testUser.getId())
+        var request = put("/users/" + testUser.getId()).with(jwt())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(om.writeValueAsString(data));
 
@@ -114,9 +118,8 @@ public class UsersControllerTest {
                 .andExpect(status().isOk());
 
         var user = userRepository.findById(testUser.getId()).get();
-        assertThat(user.getUsername()).isEqualTo(data.getUsername().get());
+        assertThat(user.getActualUsername()).isEqualTo(data.getUsername().get());
         assertThat(user.getEmail()).isEqualTo(data.getEmail().get());
-        assertThat(user.getPassword()).isEqualTo(data.getPassword().get());
     }
 
     @Test
@@ -130,7 +133,7 @@ public class UsersControllerTest {
         data.put("firstName", "firstname");
         data.put("lastName", "lastname");
 
-        var request = put("/users/" + testUser.getId())
+        var request = put("/users/" + testUser.getId()).with(jwt())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(om.writeValueAsString(data));
 
@@ -138,10 +141,24 @@ public class UsersControllerTest {
                 .andExpect(status().isOk());
 
         var user = userRepository.findById(testUser.getId()).get();
-        assertThat(user.getUsername()).isEqualTo((data.get("username")));
+        assertThat(user.getActualUsername()).isEqualTo((data.get("username")));
         assertThat(user.getEmail()).isEqualTo((data.get("email")));
-        assertThat(user.getPassword()).isEqualTo((data.get("password")));
         assertThat(user.getFirstName()).isEqualTo(testUser.getFirstName());
         assertThat(user.getLastName()).isEqualTo(testUser.getLastName());
+    }
+
+    @Test
+    public void testIndexWithoutAuth() throws Exception {
+        userRepository.save(testUser);
+        var result = mockMvc.perform(get("/users"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    public void testShowWithoutAuth() throws Exception {
+        userRepository.save(testUser);
+        var request = get("/users/{id}", testUser.getId());
+        var result = mockMvc.perform(request)
+                .andExpect(status().isUnauthorized());
     }
 }

@@ -12,6 +12,10 @@ spring:
     ansi:
       enabled: always
 
+rsa:
+  private-key: classpath:certs/private.pem
+  public-key: classpath:certs/public.pem
+
 server:
   port: 7070
   address: 0.0.0.0

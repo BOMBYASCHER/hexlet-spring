@@ -1,5 +1,6 @@
 package io.spring.util;
 
+import io.spring.dto.user.UserCreateDTO;
 import io.spring.model.Page;
 import io.spring.model.Post;
 import io.spring.model.User;
@@ -17,6 +18,7 @@ public class ModelGenerator {
     private final Faker faker = new Faker();
 
     private Model<User> user;
+    private Model<UserCreateDTO> createUser;
     private Model<Page> page;
     private Model<Post> post;
 
@@ -31,7 +33,14 @@ public class ModelGenerator {
                 .supply(Select.field(User::getLastName), () -> faker.name().lastName())
                 .supply(Select.field(User::getEmail), () -> faker.internet().emailAddress())
                 .supply(Select.field(User::getUsername), () -> faker.name().username())
-                .supply(Select.field(User::getPassword), () -> faker.internet().password())
+                .supply(Select.field(User::getPasswordDigest), () -> faker.internet().password(8, 30))
+                .toModel();
+        createUser = Instancio.of(UserCreateDTO.class)
+                .supply(Select.field(UserCreateDTO::getUsername), () -> faker.name().username())
+                .supply(Select.field(UserCreateDTO::getPassword), () -> faker.internet().password(8, 30))
+                .supply(Select.field(UserCreateDTO::getEmail), () -> faker.internet().emailAddress())
+                .supply(Select.field(UserCreateDTO::getFirstName), () -> faker.name().firstName())
+                .supply(Select.field(UserCreateDTO::getLastName), () -> faker.name().lastName())
                 .toModel();
         page = Instancio.of(Page.class)
                 .ignore(Select.field(Page::getId))
